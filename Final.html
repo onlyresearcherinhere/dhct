@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kỹ thuật chế biến với phụ liệu</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+const TNR=["'Times New Roman'","Times","'Liberation Serif'","serif"];
+tailwind.config={theme:{fontFamily:{sans:TNR,serif:TNR,mono:TNR},extend:{colors:{herb:{50:'#eef5ef',100:'#d6e8da',500:'#3f7d5a',600:'#2f6b4f',700:'#235340',900:'#14342a'},bark:{100:'#eadfd1',400:'#a07850',600:'#6b4a2f',800:'#46301e'}}}}}
+</script>
+<style>
+html{font-size:17px}
+body,button,input,select,textarea{font-family:'Times New Roman',Times,'Liberation Serif',serif}
+body{color:#2b2118;line-height:1.55;background:#f4ecd8;background-image:radial-gradient(circle at 12% 8%,rgba(63,125,90,.12),transparent 38%),radial-gradient(circle at 92% 28%,rgba(160,120,80,.14),transparent 40%)}
+.card{background:#fffdf7;border:1px solid #e4d7bd;border-radius:18px;box-shadow:0 10px 26px -14px rgba(70,48,30,.45)}
+.badge{width:2.5rem;height:2.5rem;border-radius:50%;background:#2f6b4f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.2rem;flex:none;box-shadow:0 0 0 4px #d6e8da}
+.note{border-left:5px solid #c9962b;background:#fff6dc;border-radius:10px;padding:.65rem 1rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-weight:700;border-radius:12px;padding:.65rem 1.3rem;cursor:pointer;transition:.12s}
+.btn-p{background:#2f6b4f;color:#fff;box-shadow:0 3px 0 #14342a}.btn-p:hover{background:#235340}
+.btn-n{background:#6b4a2f;color:#fff;box-shadow:0 3px 0 #46301e}.btn-n:hover{background:#46301e}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.inp{width:100%;border:2px solid #d9c9aa;border-radius:10px;padding:.5rem .75rem;background:#fff;font-size:1.05rem}
+.inp:focus{outline:none;border-color:#2f6b4f;box-shadow:0 0 0 3px #d6e8da}
+.opt{border:2px solid #e4d7bd;background:#fff;border-radius:12px;transition:.12s}
+.opt:hover:not(:disabled){border-color:#3f7d5a;background:#f3f9f4}
+.pw{position:relative;margin-right:46px}
+.pw:after{content:"";position:absolute;right:-52px;top:42%;width:66px;height:16px;border-radius:8px;background:linear-gradient(#8a6140,#5b3d25)}
+.pan{position:relative;height:230px;border-radius:50%/40%;background:radial-gradient(circle at 50% 30%,#575757,#1c1c1c);border:9px solid #6b4a2f;box-shadow:inset 0 8px 18px rgba(0,0,0,.6);overflow:hidden;display:flex;flex-wrap:wrap;gap:8px;align-content:center;justify-content:center;padding:26px}
+.stove{display:flex;justify-content:center;gap:12px;align-items:flex-end;height:36px;margin-top:2px}
+.stove i{display:block;width:14px;height:calc(5px + var(--f,0)*28px);opacity:calc(.2 + var(--f,0)*.8);border-radius:50% 50% 50% 50%/75% 75% 25% 25%;background:linear-gradient(#ffe27a,#f97316 70%,#dc2626);transition:height .5s;animation:flick .35s infinite alternate}
+@keyframes flick{to{transform:scaleX(.8) translateY(-2px)}}
+.puff{position:absolute;bottom:20px;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.55);opacity:0;pointer-events:none}
+.smoke .puff{background:rgba(30,30,30,.7)}
+.run .puff{animation:rise 1.6s infinite}
+@keyframes rise{0%{transform:translateY(0) scale(.6);opacity:.8}100%{transform:translateY(-190px) scale(2);opacity:0}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shake{animation:shake .3s}
+.chip{background:#fff;border:2px solid #e4d7bd;border-radius:14px;transition:.12s;cursor:grab}
+.chip:hover{border-color:#3f7d5a;transform:translateY(-2px)}
+.chip.sel{border-color:#2f6b4f;background:#eef5ef;box-shadow:0 0 0 3px #d6e8da}
+.slot.over{background:#d6e8da}
+.pc{width:52px;height:34px;overflow:visible}
+.pc .b{fill:var(--c);transition:fill 2.2s;stroke:rgba(70,40,20,.5);stroke-width:1.5}
+.pc .d{fill:none;stroke:rgba(70,40,20,.4);stroke-width:1.3}
+.pc.wet{filter:drop-shadow(0 0 4px rgba(255,255,255,.7))}
+.pc.mix{animation:mix .5s ease-in-out 3}
+.pc.salt .d{stroke:#fff;stroke-dasharray:2 3;stroke-width:2}
+@keyframes mix{50%{transform:translate(5px,-6px)}}
+@media (prefers-reduced-motion:reduce){.pc.mix,.run .puff,.shake,.stove i{animation:none}.pc .b{transition:none}}
+@media print{.no-print{display:none!important}.sec{display:block!important}body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<header class="text-white" style="background:linear-gradient(120deg,#14342a,#235340 55%,#3f7d5a)">
+  <div class="max-w-5xl mx-auto px-4 py-8 grid md:grid-cols-[1fr_auto] gap-6 items-center">
+    <div>
+      <span class="inline-block bg-white/15 rounded-full px-3 py-1 text-sm">Dược học cổ truyền · Lớp học đảo ngược</span>
+      <h1 class="text-3xl md:text-4xl font-bold mt-3 leading-tight">Kỹ thuật chế biến với phụ liệu</h1>
+      <p class="mt-3 text-herb-100 max-w-xl text-lg">Nhận diện phụ liệu, tính lượng pha chế, điều khiển thời gian ủ và nhiệt độ sao, rồi đối chiếu thành phẩm với tiêu chuẩn cảm quan.</p>
+    </div>
+    <div id="heroIcons" class="grid grid-cols-4 md:grid-cols-2 gap-2"></div>
+  </div>
+</header>
+<div class="sticky top-0 z-30 bg-herb-900/95 text-herb-100 no-print" style="backdrop-filter:blur(6px)">
+  <div class="max-w-5xl mx-auto px-4 py-2">
+    <div class="flex justify-between text-sm mb-1"><span id="progLabel">Tiến độ: 0%</span><span id="liveScore">Điểm tạm tính: 0/100</span></div>
+    <div class="h-3 bg-herb-700 rounded-full overflow-hidden"><div id="progBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:linear-gradient(90deg,#e9c46a,#f4d98a)"></div></div>
+  </div>
+</div>
+
+<nav class="max-w-5xl mx-auto px-4 mt-5 no-print"><div id="tabs" class="flex"></div></nav>
+
+<main class="max-w-5xl mx-auto px-4 py-5 space-y-5">
+
+<section id="s1" class="sec space-y-5">
+  <div class="card p-5 md:p-6">
+    <div class="flex gap-3"><span class="badge">1</span><div><h2 class="text-2xl font-bold text-herb-700">Nhận diện: ghép dược liệu với phụ liệu</h2>
+    <p class="text-bark-600">Kéo phụ liệu thả vào dược liệu, hoặc chạm chọn phụ liệu rồi chạm vào dược liệu. Mỗi lần ghép sai bị trừ 3 điểm (tối đa 15 điểm).</p></div></div>
+    <div class="grid md:grid-cols-2 gap-6 mt-5">
+      <div id="herbs" class="space-y-3"></div>
+      <div>
+        <h3 class="font-bold text-bark-800 mb-2 text-lg">Phụ liệu</h3>
+        <div id="adjs" class="grid grid-cols-2 gap-3"></div>
+        <div id="fb1" class="mt-4 p-3 rounded-xl bg-bark-100 min-h-[3.5rem]">Chọn một phụ liệu để bắt đầu.</div>
+      </div>
+    </div>
+  </div>
+  <div id="calcBox" class="card p-5 md:p-6 opacity-50 pointer-events-none">
+    <div class="flex gap-3"><span class="badge">2</span><div><h2 class="text-2xl font-bold text-herb-700">Tính lượng phụ liệu cho 4 vị thuốc</h2>
+    <p class="text-bark-600">Mỗi vị thuốc lấy <b>0,2 kg (200 g)</b>. Đúng ngay lần đầu được 5 điểm, các lần sau 2,5 điểm (tối đa 20 điểm). Nếu sai, hệ thống hiển thị gợi ý công thức hoặc quy trình.</p></div></div>
+    <div id="calcList" class="grid lg:grid-cols-2 gap-4 mt-4"></div>
+  </div>
+  <div class="text-right no-print"><button id="next1" class="btn btn-n hidden">Sang bước sao trích ›</button></div>
+</section>
+
+<section id="s2" class="sec space-y-5 hidden">
+  <div class="card p-5 md:p-6">
+    <div class="flex gap-3"><span class="badge">3</span><div><h2 class="text-2xl font-bold text-herb-700">Bảng điều khiển nhiệt độ và thời gian ủ</h2>
+    <p class="text-bark-600">Thực hành lần lượt 4 vị thuốc. Mỗi vị tối đa 7,5 điểm (tổng 30 điểm).</p></div></div>
+    <div class="note mt-4"><b>Quy định bài thực hành:</b> mỗi vị thuốc chỉ được sao <b>một mẻ</b>, không làm mẻ mới. Mẻ hỏng (cháy, chưa ngấm phụ liệu, còn ẩm…) được tính là <b>không đạt</b> và nhận 0 điểm.</div>
+    <div class="grid md:grid-cols-2 gap-6 mt-5">
+      <div class="space-y-5">
+        <div><p class="font-bold mb-2">Dược liệu thực hành</p><div class="grid grid-cols-2 gap-2" id="herbPick"></div></div>
+        <div>
+          <label class="font-bold">Thời gian ủ: <span id="uVal" class="text-herb-700">0</span> phút</label>
+          <input id="uRange" type="range" min="0" max="60" step="5" value="0" class="w-full accent-green-700">
+          <div class="flex justify-between text-sm text-bark-600"><span>0</span><span>30</span><span>60</span></div>
+        </div>
+        <div>
+          <p class="font-bold mb-2">Trộn đều lại trong lúc ủ</p>
+          <div class="grid grid-cols-2 gap-2" id="mixPick">
+            <button data-m="0" class="mx opt p-2">Không trộn</button><button data-m="10" class="mx opt p-2">Cách 10 phút</button>
+            <button data-m="20" class="mx opt p-2">Cách 20 phút</button><button data-m="30" class="mx opt p-2">Cách 30 phút</button>
+          </div>
+        </div>
+        <label id="dryBox" class="hidden note flex items-center gap-2 font-bold"><input id="dry" type="checkbox" class="w-5 h-5 accent-green-700"> Sấy khô sau khi ủ (trước khi sao)</label>
+        <div>
+          <label class="font-bold">Nhiệt độ sao: <span id="tVal" class="text-herb-700"></span></label>
+          <input id="tRange" type="range" min="40" max="260" step="5" value="40" class="w-full accent-green-700">
+          <div class="h-2 rounded-full" style="background:linear-gradient(to right,#9bd0a8,#f2c14e 50%,#e8562a)"></div>
+          <div class="flex justify-between text-sm text-bark-600 mt-1"><span>40°C</span><span>Lửa nhỏ ≤100 (vi sao)</span><span>Lửa vừa ≤160 (sao vàng)</span><span>260°C</span></div>
+        </div>
+        <button id="btnRun" class="btn btn-p w-full text-lg">Bắt đầu Sao trích</button>
+        <p class="text-sm text-bark-600 text-center -mt-2">Bấm một lần để sao. Mỗi vị thuốc chỉ có một mẻ, hãy đặt thông số kỹ trước khi bấm.</p>
+      </div>
+      <div>
+        <p id="panCap" class="text-center font-bold text-xl text-bark-800 mb-3"></p>
+        <div id="panWrap"><div class="pw"><div class="pan" id="pan"><div class="contents" id="panPcs"></div>
+          <span class="puff" style="left:10%"></span><span class="puff" style="left:30%;animation-delay:.4s"></span><span class="puff" style="left:50%;animation-delay:.8s"></span><span class="puff" style="left:70%;animation-delay:1.2s"></span><span class="puff" style="left:85%;animation-delay:.6s"></span></div></div>
+          <div class="stove" id="stove"><i></i><i style="animation-delay:.1s"></i><i style="animation-delay:.2s"></i><i style="animation-delay:.05s"></i><i style="animation-delay:.15s"></i></div></div>
+        <div id="stages" class="flex flex-wrap gap-2 mt-3 text-sm justify-center"><span data-k="u">Ủ</span><span data-k="m">Trộn đều</span><span data-k="d">Sấy khô</span><span data-k="s">Sao</span></div>
+        <div class="mt-3"><div class="flex justify-between"><span id="tempShow">Nhiệt độ chảo: 25°C</span><span id="tries">Đã sao: 0/4 vị</span></div>
+          <div class="relative h-3 rounded-full overflow-hidden mt-1" style="background:linear-gradient(to right,#9bd0a8,#f2c14e 50%,#e8562a)"><div id="tCover" class="absolute right-0 top-0 bottom-0 transition-all duration-300" style="width:100%;background:#eadfd1"></div></div></div>
+        <div id="fb2" class="mt-3 p-3 rounded-xl bg-bark-100 min-h-[5rem]">Chọn dược liệu, đặt thông số rồi bấm “Bắt đầu Sao trích”.</div>
+      </div>
+    </div>
+  </div>
+  <div class="text-right no-print"><button id="next2" class="btn btn-n hidden">Sang Tiêu chuẩn sản phẩm ›</button></div>
+</section>
+
+<section id="s3" class="sec space-y-5 hidden">
+  <div class="card p-5 md:p-6">
+    <div class="flex justify-between items-start flex-wrap gap-2">
+      <div class="flex gap-3"><span class="badge">4</span><div><h2 class="text-2xl font-bold text-herb-700">Tiêu chuẩn sản phẩm: xử lý tình huống</h2>
+      <p class="text-bark-600">7 tình huống, mỗi tình huống 5 điểm (đúng ngay lần đầu 5, lần hai 3, lần ba 1).</p></div></div>
+      <span id="qNo" class="font-bold bg-herb-100 text-herb-900 rounded-full px-4 py-1"></span>
+    </div>
+    <div class="note mt-4">Mẻ còn cứu được thì xử lý tiếp ngay trên mẻ đó. Mẻ đã hỏng <b>không được làm lại</b>: kết luận <b>không đạt</b> và xác định đúng nguyên nhân.</div>
+    <div class="grid md:grid-cols-2 gap-6 mt-5">
+      <div>
+        <p id="qCap" class="text-center font-bold text-xl text-bark-800 mb-3"></p>
+        <div id="panWrap3"><div class="pw"><div class="pan" style="height:200px"><div class="contents" id="pan3"></div>
+          <span class="puff" style="left:20%"></span><span class="puff" style="left:50%;animation-delay:.6s"></span><span class="puff" style="left:78%;animation-delay:1s"></span></div></div></div>
+        <p id="qDesc" class="mt-4 note"></p>
+      </div>
+      <div>
+        <p class="font-bold mb-2 text-lg">Bạn xử lý thế nào?</p>
+        <div class="space-y-2" id="opts"></div>
+        <div id="fb3" class="mt-3 p-3 rounded-xl hidden"></div>
+        <button id="nextQ" class="btn btn-p hidden mt-3">Tình huống tiếp theo ›</button>
+      </div>
+    </div>
+  </div>
+  <div id="sensory" class="card p-5 md:p-6 hidden">
+    <h3 class="text-xl font-bold text-herb-700 mb-3">Tiêu chuẩn thành phẩm đạt: cảm quan và quy trình chế biến</h3>
+    <div class="overflow-x-auto"><table class="w-full min-w-[760px]">
+      <thead class="bg-herb-100 text-herb-900"><tr><th class="p-2 text-left">Vị thuốc</th><th class="p-2 text-left">Cảm quan</th><th class="p-2 text-left">Màu sắc</th><th class="p-2 text-left">Mùi vị</th><th class="p-2 text-left">Quy trình chuẩn</th><th class="p-2 text-left">Mục đích phụ liệu</th></tr></thead><tbody><tr class="border-b border-bark-100"><td class="p-2 font-bold">Bạch thược trích rượu</td><td class="p-2">Phiến đồng đều, ít vụn nát, khô</td><td class="p-2">Vàng nhạt</td><td class="p-2">Thơm nhẹ</td><td class="p-2">Ủ 30 phút (trộn cách 10 phút), sao vàng (lửa vừa) 100–160°C</td><td class="p-2">Giảm tính hàn; làm sạch, khô để bảo quản, làm thơm thuốc</td></tr><tr class="border-b border-bark-100"><td class="p-2 font-bold">Đảng sâm trích gừng</td><td class="p-2">Phiến đồng đều, ít vụn nát, khô dẻo</td><td class="p-2">Vàng đậm hơn dược liệu sống</td><td class="p-2">Thơm mùi gừng</td><td class="p-2">Ủ 30 phút (trộn cách 10 phút), vi sao (lửa nhỏ) 50–100°C</td><td class="p-2">Dẫn thuốc vào kinh phế, tăng bổ phế khí; giảm nê trệ; làm khô để bảo quản</td></tr><tr class="border-b border-bark-100"><td class="p-2 font-bold">Hoàng kỳ trích mật</td><td class="p-2">Phiến đồng đều, ít vụn nát, khô không dính tay</td><td class="p-2">Vàng đậm</td><td class="p-2">Thơm mùi caramen, vị ngọt</td><td class="p-2">Ủ 30–60 phút (trộn cách 10 phút), sấy khô, sao vàng (lửa vừa) 100–150°C</td><td class="p-2">Tăng nhuận bổ, kiện tỳ, bổ khí; làm khô, caramen hóa để bảo quản, làm thơm</td></tr><tr><td class="p-2 font-bold">Ngưu tất trích muối</td><td class="p-2">Phiến đồng đều, ít vụn nát, khô</td><td class="p-2">Vàng, có thể hơi cháy cạnh</td><td class="p-2">Thơm</td><td class="p-2">Ủ 30 phút (trộn cách 10 phút), sao vàng (lửa vừa) 100–150°C</td><td class="p-2">Tăng dẫn thuốc vào tạng thận; làm khô để bảo quản, làm thơm</td></tr></tbody></table></div><div class="note mt-4"><b>Chú ý:</b> khi thời tiết có độ ẩm cao, Hoàng kỳ trích mật dễ bị ẩm mốc, nên sấy kĩ lại bằng tủ sấy đến khô kiệt.</div>
+  </div>
+  <div class="text-right no-print"><button id="next3" class="btn btn-n hidden">Xem kết quả ›</button></div>
+</section>
+
+<section id="s4" class="sec hidden">
+  <div class="card p-5 md:p-8">
+    <div class="text-center pb-4 mb-5" style="border-bottom:3px double #a07850">
+      <p class="text-bark-600">Học phần Dược học cổ truyền · Lớp học đảo ngược</p>
+      <h2 class="text-3xl font-bold text-herb-700 mt-1">PHIẾU KẾT QUẢ THỰC HÀNH</h2>
+      <p class="text-lg">Kỹ thuật chế biến với phụ liệu</p>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <label class="font-bold">Họ và tên<input id="stName" class="inp mt-1"></label>
+      <label class="font-bold">Mã sinh viên / Lớp<input id="stId" class="inp mt-1"></label>
+    </div>
+    <div class="flex flex-wrap items-center justify-center gap-8 my-6">
+      <div id="gauge" class="w-40 h-40 rounded-full grid place-items-center" style="--p:0;background:conic-gradient(#2f6b4f calc(var(--p)*1%),#eadfd1 0)"><div class="w-32 h-32 rounded-full bg-white grid place-items-center text-center"><div><b id="gN" class="text-5xl text-herb-700">0</b><div class="text-bark-600">/ 100 điểm</div></div></div></div>
+      <div id="stamp" class="text-center px-6 py-3 rounded-xl font-bold text-2xl" style="border:4px double currentColor;transform:rotate(-4deg)"></div>
+    </div>
+    <div class="overflow-x-auto"><table class="w-full">
+      <thead class="bg-herb-100 text-herb-900"><tr><th class="p-2 text-left">Nội dung</th><th class="p-2 text-right">Điểm</th><th class="p-2 text-right">Tối đa</th></tr></thead>
+      <tbody id="resBody"></tbody>
+      <tfoot><tr class="font-bold bg-bark-100"><td class="p-2">Tổng điểm</td><td class="p-2 text-right" id="resTotal"></td><td class="p-2 text-right">100</td></tr></tfoot>
+    </table></div>
+    <h3 class="font-bold text-lg mt-5 mb-2">Kết quả thực hành từng vị thuốc</h3>
+    <div id="herbStatus" class="grid sm:grid-cols-2 gap-2"></div>
+    <p id="resRank" class="mt-5 text-xl font-bold text-herb-700"></p>
+    <p id="resDate" class="text-bark-600 mt-1"></p>
+    <div class="flex flex-wrap gap-3 mt-5 no-print">
+      <button onclick="window.print()" class="btn btn-p">Tải báo cáo kết quả (PDF/In)</button>
+      <button onclick="location.reload()" class="btn" style="border:2px solid #6b4a2f;color:#6b4a2f">Làm lại từ đầu</button>
+    </div>
+    <p class="text-sm text-bark-600 mt-3 no-print">Trong hộp thoại in, chọn “Lưu dưới dạng PDF”, hoặc chụp màn hình phiếu này để nộp cho giảng viên.</p>
+  </div>
+</section>
+</main>
+<footer class="text-center text-sm text-bark-600 pb-8">Học liệu mô phỏng phục vụ học tập, tham khảo theo giáo trình Thực hành Dược học cổ truyền.</footer>
+
+<script>
+const $=s=>document.querySelector(s);
+const S={wrong:0,matched:{},pairsDone:false,calcSc:{},ct:{},calcDone:false,ip2Best:0,ip2Ok:false,ip3:0,ip3Done:false,max:1,cur:1,sel:null,s2:{},r2:{},tn:0,qi:0,qt:0};
+
+/* ---------- Dữ liệu và hình minh họa dùng chung ---------- */
+const DL={
+ bt:{n:'Bạch thược',la:'Radix Paeoniae lactiflorae',a:'rượu',raw:'#f3ecdc',ok:'#e6cf7c',t:[100,160],u:[30,35],okMsg:'<b>Đạt:</b> Bạch thược phiến đồng đều, ít vụn nát, khô, màu vàng nhạt, mùi thơm nhẹ.',std:'ủ 30 phút, trộn đều cách 10 phút, sao vàng (lửa vừa) ở 100–160°C, đảo đều đến khi bề mặt hơi vàng và thơm.'},
+ ds:{n:'Đảng sâm',la:'Radix Codonopsis',a:'gừng',raw:'#d6c19a',ok:'#b88a45',t:[50,100],u:[30,35],okMsg:'<b>Đạt:</b> Đảng sâm phiến đồng đều, ít vụn nát, khô dẻo, màu vàng đậm hơn dược liệu sống, thơm mùi gừng.',std:'ủ 30 phút, trộn đều cách 10 phút, vi sao (lửa nhỏ) ở 50–100°C, đảo đều đến khi se khô, màu vàng đậm hơn, thơm mùi gừng.'},
+ hk:{n:'Hoàng kỳ',la:'Radix Astragali membranacei',a:'mật',raw:'#eadba6',ok:'#d1a53c',t:[100,150],u:[30,60],dry:1,okMsg:'<b>Đạt:</b> Hoàng kỳ phiến đồng đều, ít vụn nát, khô không dính tay, màu vàng đậm, thơm mùi caramen, vị ngọt.',std:'ủ 30–60 phút, trộn đều cách 10 phút, sấy khô, rồi sao vàng (lửa vừa) ở 100–150°C đến khi vàng khô, thơm.'},
+ nt:{n:'Ngưu tất',la:'Radix Achyranthis bidentatae',a:'muối',raw:'#cbbb9c',ok:'#d6bd6a',t:[100,150],u:[30,35],okMsg:'<b>Đạt:</b> Ngưu tất phiến đồng đều, ít vụn nát, khô, màu vàng (có thể hơi cháy cạnh), mùi thơm.',std:'ủ 30 phút, trộn đều cách 10 phút, sao vàng (lửa vừa) ở 100–150°C đến khi bề mặt hơi vàng, thơm.'}};
+const SHP={
+ bt:'<ellipse class="b" cx="32" cy="20" rx="26" ry="16"/><ellipse class="d" cx="32" cy="20" rx="16" ry="9.5"/><ellipse class="d" cx="32" cy="20" rx="7" ry="4"/>',
+ hk:'<path class="b" d="M3 25 Q20 7 61 12 Q63 20 58 25 Q22 35 3 31Z"/><path class="d" d="M10 25 Q30 16 56 16 M9 29 Q30 25 54 21"/>',
+ ds:'<rect class="b" x="5" y="7" width="54" height="26" rx="11"/><path class="d" d="M18 8 Q22 20 18 32 M30 8 Q34 20 30 32 M42 8 Q46 20 42 32"/>',
+ nt:'<path class="b" d="M3 16 Q10 9 16 15 Q22 21 28 15 Q36 9 42 16 Q50 22 61 16 L61 25 Q50 31 42 25 Q36 31 28 25 Q22 31 16 25 Q10 31 3 25Z"/><path class="d" d="M16 15 V25 M28 15 V25 M42 16 V25"/>'};
+const ICON={
+ ruou:'<rect x="15" y="2" width="10" height="10" rx="2" fill="#6b4a2f"/><path d="M14 12h12v6c8 4 10 10 10 18v14a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V36c0-8 2-14 10-18z" fill="#bfe0c8" stroke="#2f6b4f" stroke-width="2"/><rect x="10" y="30" width="20" height="14" rx="2" fill="#fff8e6"/>',
+ mat:'<rect x="8" y="4" width="24" height="9" rx="3" fill="#6b4a2f"/><path d="M6 13h28v34a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6z" fill="#e9a825" stroke="#a66a00" stroke-width="2"/><path d="M10 13v9q4 7 8 0v-9" fill="#f6c75a"/>',
+ gung:'<path d="M5 40q-2-9 6-11l2-9q4-5 9 0l3 7q9-2 13 4t-2 13q-7 6-17 4t-14-8z" fill="#e3c27a" stroke="#9a7a2e" stroke-width="2"/><path d="M13 38q6-3 10 2M23 29q5 0 7 4" stroke="#9a7a2e" fill="none" stroke-width="1.5"/>',
+ muoi:'<path d="M12 8h16l4 10v30a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V18z" fill="#eef2f7" stroke="#6b7a8c" stroke-width="2"/><circle cx="16" cy="14" r="1.6" fill="#6b7a8c"/><circle cx="24" cy="14" r="1.6" fill="#6b7a8c"/><circle cx="20" cy="18" r="1.6" fill="#6b7a8c"/><rect x="10" y="28" width="20" height="14" rx="2" fill="#fff"/>'};
+const icon=(k,w)=>`<svg viewBox="0 0 40 56" style="width:${w||36}px;height:${(w||36)*1.4}px">${ICON[k]}</svg>`;
+function pcs(h,n,c,cls){return Array.from({length:n},(_,i)=>`<svg class="pc ${cls||''}" viewBox="0 0 64 40" style="rotate:${(i*53%80)-40}deg;--c:${c}">${SHP[h]}</svg>`).join('')}
+function blend(a,b,k){const x=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));const A=x(a),B=x(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*k).toString(16).padStart(2,'0')).join('')}
+$('#heroIcons').innerHTML=Object.keys(DL).map(h=>`<div class="bg-white/10 rounded-xl p-2 text-center"><svg class="pc mx-auto" viewBox="0 0 64 40" style="width:64px;height:40px;--c:${DL[h].ok}">${SHP[h]}</svg><div class="text-sm mt-1">${DL[h].n}</div></div>`).join('');
+
+/* ---------- Điều hướng và tiến độ ---------- */
+const TAB=['Nhận diện','Sao trích','Tiêu chuẩn sản phẩm','Kết quả'];
+function renderTabs(){
+  $('#tabs').innerHTML=TAB.map((t,i)=>{const n=i+1,ok=n<=S.max,on=n===S.cur,done=n<S.max;
+    const cl=on?'background:#2f6b4f;color:#fff;box-shadow:0 0 0 5px #d6e8da':done?'background:#e9c46a;color:#46301e':ok?'background:#fff;color:#2f6b4f;border:2px solid #2f6b4f':'background:#eadfd1;color:#a07850';
+    return `<div class="flex-1 text-center relative">${i<3?`<div class="absolute h-1 rounded" style="top:1.25rem;left:50%;width:100%;background:${done?'#e9c46a':'#d9c9aa'}"></div>`:''}
+    <button ${ok?'':'disabled'} onclick="go(${n})" class="relative z-10 w-10 h-10 rounded-full font-bold text-lg" style="${cl}">${done?'✔':n}</button>
+    <div class="text-sm mt-1 ${on?'font-bold text-herb-700':'text-bark-600'}">${t}</div></div>`}).join('');
+}
+function go(n){S.cur=n;S.max=Math.max(S.max,n);for(let i=1;i<=4;i++)$('#s'+i).classList.toggle('hidden',i!==n);renderTabs();if(n===4)showResult();window.scrollTo({top:0,behavior:'smooth'})}
+const pairScore=()=>Math.max(0,15-3*S.wrong);
+function calcSum(){return Object.values(S.calcSc).reduce((a,b)=>a+b,0)}
+const total=()=>(S.pairsDone?pairScore():0)+calcSum()+S.ip2Best+S.ip3;
+function update(){
+  const p=[S.pairsDone,S.calcDone,S.ip2Ok,S.ip3Done].filter(Boolean).length*25;
+  $('#progBar').style.width=p+'%';$('#progLabel').textContent='Tiến độ: '+p+'%';$('#liveScore').textContent='Điểm tạm tính: '+Math.round(total())+'/100';
+}
+
+/* ---------- Nhận diện ---------- */
+const HERBS=[
+ {id:'hk',a:'mat',why:'Mật (mật ong hoặc mật mía) tăng tác dụng nhuận bổ, kiện tỳ, bổ khí của Hoàng kỳ; đồng thời làm khô, caramen hóa để bảo quản và làm thơm thuốc.'},
+ {id:'nt',a:'muoi',why:'Nước muối tăng dẫn thuốc vào tạng thận; đồng thời làm khô để bảo quản và làm thơm thuốc.'},
+ {id:'ds',a:'gung',why:'Nước gừng tăng dẫn thuốc vào kinh phế, tăng tác dụng bổ phế khí, giảm tác dụng gây nê trệ của Đảng sâm; làm khô để bảo quản.'},
+ {id:'bt',a:'ruou',why:'Rượu giảm tính hàn cho vị thuốc; làm sạch, khô để bảo quản và làm thơm thuốc.'}];
+const ADJ=[{id:'ruou',n:'Rượu'},{id:'mat',n:'Mật ong / mật mía'},{id:'gung',n:'Nước gừng'},{id:'muoi',n:'Nước muối'}];
+const adjName=id=>ADJ.find(a=>a.id===id).n;
+$('#herbs').innerHTML=HERBS.map(h=>`<div class="slot card p-3 flex items-center gap-3 cursor-pointer" style="border:2px dashed #a07850" data-h="${h.id}">
+  <div class="rounded-xl bg-herb-50 p-2 flex-none"><svg class="pc" viewBox="0 0 64 40" style="width:72px;height:46px;--c:${DL[h.id].raw}">${SHP[h.id]}</svg></div>
+  <div class="flex-1"><p class="font-bold text-xl text-herb-700">${DL[h.id].n}</p><p class="text-sm italic text-bark-600">${DL[h.id].la}</p><p class="slotTxt text-bark-600">Thả phụ liệu vào đây</p></div></div>`).join('');
+$('#adjs').innerHTML=ADJ.map(a=>`<button draggable="true" data-a="${a.id}" class="chip p-3 text-center"><span class="flex justify-center">${icon(a.id,38)}</span><span class="font-bold block mt-1">${a.n}</span></button>`).join('');
+document.querySelectorAll('.chip').forEach(c=>{
+  c.onclick=()=>{if(c.disabled)return;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');S.sel=c.dataset.a;$('#fb1').textContent='Đã chọn '+adjName(S.sel)+'. Chạm vào dược liệu tương ứng.'};
+  c.ondragstart=e=>{e.dataTransfer.setData('text',c.dataset.a);S.sel=c.dataset.a};
+});
+document.querySelectorAll('.slot').forEach(s=>{
+  s.onclick=()=>place(s,S.sel);
+  s.ondragover=e=>{e.preventDefault();s.classList.add('over')};
+  s.ondragleave=()=>s.classList.remove('over');
+  s.ondrop=e=>{e.preventDefault();s.classList.remove('over');place(s,e.dataTransfer.getData('text'))};
+});
+function place(slot,adj){
+  const hid=slot.dataset.h;if(S.matched[hid]||!adj)return;
+  const h=HERBS.find(x=>x.id===hid),fb=$('#fb1');
+  if(h.a===adj){
+    S.matched[hid]=adj;slot.style.border='2px solid #3f7d5a';slot.style.background='#eef5ef';
+    slot.querySelector('.slotTxt').innerHTML='<b class="text-herb-600">✔ '+adjName(adj)+'</b>';
+    const chip=document.querySelector(`.chip[data-a="${adj}"]`);chip.disabled=true;chip.classList.remove('sel');chip.style.opacity='.4';chip.draggable=false;
+    fb.className='mt-4 p-3 rounded-xl bg-herb-100 text-herb-900';fb.textContent='Đúng! '+h.why;S.sel=null;
+    if(Object.keys(S.matched).length===4){S.pairsDone=true;fb.textContent+=' Hoàn thành ghép cặp: '+pairScore()+'/15 điểm. Mời làm phần tính lượng phụ liệu.';
+      $('#calcBox').classList.remove('opacity-50','pointer-events-none')}
+  }else{
+    S.wrong++;slot.classList.add('shake');setTimeout(()=>slot.classList.remove('shake'),350);
+    fb.className='mt-4 p-3 rounded-xl bg-red-100 text-red-800';fb.textContent='Chưa đúng: '+adjName(adj)+' không phải phụ liệu của '+DL[hid].n+'. Hãy nhớ lại mục đích của từng phụ liệu và thử lại (−3 điểm).';
+  }
+  update();
+}
+
+const CALC=[
+{id:'nt',t:'Ngưu tất trích muối',q:'Pha dung dịch nước muối NaCl 5% đủ <b>36 ml</b> để trích 200 g Ngưu tất. Tính lượng muối và lượng nước sạch dùng để hòa tan.',
+ f:[['Muối NaCl (g)',1.8,0.05],['Nước sạch (ml)',34.2,2.2]],h:'36 ml × 5% = 1,8 g muối NaCl, hòa tan bằng nước sạch cho đến khi thu được 36 ml dung dịch (khoảng 34 ml nước).'},
+{id:'hk',t:'Hoàng kỳ trích mật',q:'Chuẩn bị dịch mật mía để trích 200 g Hoàng kỳ. Điền lượng mật mía, lượng nước thêm vào và thể tích dịch mật thu được sau khi đun tan.',
+ f:[['Mật mía (g)',40,0.5],['Nước thêm vào (ml)',40,0.5],['Dịch mật mía thu được (ml)',50,3]],h:'Lấy 40 g mật mía thái nhỏ, thêm 40 ml nước, đun đến khi tan hết, thu được khoảng 50 ml dịch mật mía.'},
+{id:'ds',t:'Đảng sâm trích gừng',q:'Chuẩn bị nước gừng để trích 200 g Đảng sâm. Điền lượng gừng tươi giã nhỏ, thể tích dịch thu được sau lần lọc đầu và tổng thể tích dịch nước gừng cần đạt sau khi thêm nước vào bã để lọc tiếp.',
+ f:[['Gừng tươi (g)',30,0.5],['Dịch lọc lần đầu (ml)',36,1],['Tổng dịch nước gừng cần đủ (ml)',108,1]],h:'Giã nhỏ 30 g gừng tươi, thêm nước, lọc nhiều lần để thu 36 ml dịch. Nếu chưa đủ, thêm nước vào bã gừng và lọc thêm cho đủ 108 ml dịch nước gừng.'},
+{id:'bt',t:'Bạch thược trích rượu',q:'Tỷ lệ rượu dùng là <b>180 ml rượu/kg dược liệu</b>. Tính lượng rượu cần cho 200 g Bạch thược.',
+ f:[['Rượu (ml)',36,0.5]],h:'0,2 kg × 180 ml/kg = 36 ml rượu.'}];
+$('#calcList').innerHTML=CALC.map(c=>`<div class="card p-4" id="c-${c.id}">
+  <div class="flex items-center gap-3"><svg class="pc" viewBox="0 0 64 40" style="width:56px;height:36px;--c:${DL[c.id].ok}">${SHP[c.id]}</svg><h3 class="font-bold text-xl text-herb-700">${c.t}</h3></div>
+  <p class="mt-2">${c.q}</p>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">${c.f.map(f=>`<label class="font-bold">${f[0]}<input type="number" step="any" min="0" class="cin inp mt-1"></label>`).join('')}</div>
+  <button class="cbtn btn btn-p mt-3" onclick="chkCalc('${c.id}')">Kiểm tra</button>
+  <div class="cfb mt-3 p-3 rounded-xl hidden"></div></div>`).join('');
+function chkCalc(id){
+  if(S.calcSc[id]!==undefined)return;
+  const c=CALC.find(x=>x.id===id),box=$('#c-'+id),ins=[...box.querySelectorAll('.cin')],fb=box.querySelector('.cfb');
+  fb.classList.remove('hidden');
+  if(ins.some(i=>i.value===''||isNaN(+i.value))){fb.className='cfb mt-3 p-3 rounded-xl bg-amber-100 text-amber-900';fb.textContent='Hãy nhập đủ tất cả các ô.';return}
+  S.ct[id]=(S.ct[id]||0)+1;
+  const bad=c.f.filter((f,i)=>Math.abs(+ins[i].value-f[1])>f[2]);
+  if(!bad.length){
+    S.calcSc[id]=S.ct[id]===1?5:2.5;ins.forEach(i=>i.disabled=true);box.querySelector('.cbtn').classList.add('hidden');box.style.borderColor='#3f7d5a';box.style.background='#f3f9f4';
+    fb.className='cfb mt-3 p-3 rounded-xl bg-herb-100 text-herb-900';fb.innerHTML='<b>Chính xác!</b> '+c.h+' Điểm: '+S.calcSc[id]+'/5.';
+    if(Object.keys(S.calcSc).length===CALC.length){S.calcDone=true;$('#next1').classList.remove('hidden')}
+  }else{
+    fb.className='cfb mt-3 p-3 rounded-xl bg-red-100 text-red-800';
+    fb.innerHTML='<b>Chưa đúng ở:</b> '+bad.map(f=>f[0]).join('; ')+'.<br><b>Gợi ý:</b> '+c.h;
+  }
+  update();
+}
+$('#next1').onclick=()=>go(2);
+
+/* ---------- Sao trích (mỗi vị một mẻ) ---------- */
+let H2='bt',MIX=0,running=false,armed=false,armT;
+$('#herbPick').innerHTML=Object.keys(DL).map(h=>`<button data-h="${h}" class="hp"><svg class="pc flex-none" viewBox="0 0 64 40" style="width:46px;height:30px;--c:${DL[h].ok}">${SHP[h]}</svg><span class="leading-tight">${DL[h].n} trích ${DL[h].a}<br><b id="ck-${h}" class="text-sm"></b></span></button>`).join('');
+function paint(c,wet){document.querySelectorAll('#pan .pc').forEach(p=>{p.style.setProperty('--c',c);p.classList.toggle('wet',!!wet)})}
+function setStage(k){document.querySelectorAll('#stages span').forEach(e=>{const on=e.dataset.k===k;e.className='px-4 py-1 rounded-full border-2 '+(on?'bg-herb-600 text-white border-herb-600':'bg-white border-bark-100 text-bark-600')+(e.dataset.k==='d'&&H2!=='hk'?' opacity-30':'')})}
+function fire(t){return t<=100?'Lửa nhỏ':t<=160?'Lửa vừa':'Lửa to'}
+function setTemp(t){$('#tempShow').textContent='Nhiệt độ chảo: '+t+'°C';const f=Math.max(0,(t-25)/235);$('#tCover').style.width=(100-f*100)+'%';$('#stove').style.setProperty('--f',f)}
+function refreshBtn(){const b=$('#btnRun'),done=!!S.r2[H2];b.disabled=done||running;b.textContent=done?'Mẻ này đã sao (không làm lại)':running?'Đang sao…':'Bắt đầu Sao trích'}
+function disarm(){armed=false;clearTimeout(armT);refreshBtn()}
+function sel2(){
+  document.querySelectorAll('.hp').forEach(b=>{const on=b.dataset.h===H2;b.className='hp opt p-2 flex items-center gap-2 text-left '+(on?'':'');b.style.borderColor=on?'#2f6b4f':'';b.style.background=on?'#d6e8da':''});
+  document.querySelectorAll('.mx').forEach(b=>{const on=+b.dataset.m===MIX;b.style.borderColor=on?'#2f6b4f':'';b.style.background=on?'#d6e8da':'';b.style.fontWeight=on?'700':'400'});
+  $('#dryBox').classList.toggle('hidden',H2!=='hk');
+  $('#panCap').textContent=DL[H2].n+' trích '+DL[H2].a;
+  $('#tVal').textContent=$('#tRange').value+'°C · '+fire(+$('#tRange').value);
+  if(!running){
+    const r=S.r2[H2],w=$('#panWrap');w.classList.remove('smoke','run');setStage('');setTemp(25);
+    if(r){$('#panPcs').innerHTML=pcs(H2,14,r.c,r.wet?'wet':'');if(r.smoke)w.classList.add('smoke');$('#fb2').className='mt-3 p-3 rounded-xl '+r.cls;$('#fb2').innerHTML=r.html}
+    else{$('#panPcs').innerHTML=pcs(H2,14,DL[H2].raw);$('#fb2').className='mt-3 p-3 rounded-xl bg-bark-100 min-h-[5rem]';$('#fb2').textContent='Đặt thông số cho '+DL[H2].n+' rồi bấm “Bắt đầu Sao trích”. Chỉ có một mẻ cho mỗi vị thuốc.'}
+    disarm();
+  }
+}
+document.querySelectorAll('.hp').forEach(b=>b.onclick=()=>{if(!running){H2=b.dataset.h;sel2()}});
+document.querySelectorAll('.mx').forEach(b=>b.onclick=()=>{if(!running){MIX=+b.dataset.m;sel2()}});
+$('#uRange').oninput=e=>$('#uVal').textContent=e.target.value;
+$('#tRange').oninput=()=>{$('#tVal').textContent=$('#tRange').value+'°C · '+fire(+$('#tRange').value)};
+
+function evalSao(h,u,t,m,dry){
+  const d=DL[h],[lo,hi]=d.t,[u0,u1]=d.u,iss=[],burn=t>hi+40;
+  if(h==='bt'&&burn&&u<15)iss.push({lv:'fail',r:0,c:'#241608',smoke:1,msg:'Rượu bay hơi hết, dược liệu chưa ngấm, bị cháy bề mặt.'});
+  else{
+    if(burn)iss.push({lv:'fail',r:0,c:'#241608',smoke:1,msg:`Nhiệt độ ${t}°C quá cao so với quy định: bề mặt cháy khét, phụ liệu (${d.a}) bị phá hủy, bên trong chưa chín đều.`});
+    if(u<15)iss.push({lv:'fail',r:3,c:blend(d.raw,d.ok,.15),msg:`Ủ chỉ ${u} phút nên ${d.a} chưa ngấm vào dược liệu.`});
+  }
+  if(!burn&&t>hi)iss.push({lv:'partial',r:1,c:'#8b5a22',msg:`Nhiệt độ ${t}°C cao hơn khoảng quy định: bề mặt sẫm màu, có chỗ cháy cạnh, mất mùi thơm.`});
+  if(t<lo){ if(t<lo-30)iss.push({lv:'fail',r:2,c:'#d4c9a6',wet:1,msg:`Nhiệt độ ${t}°C quá thấp: dược liệu còn ẩm, không khô, không dậy mùi thơm.`});
+            else iss.push({lv:'partial',r:2,c:blend(d.raw,d.ok,.35),msg:`Nhiệt độ ${t}°C hơi thấp: bề mặt chưa chuyển vàng, chưa thơm.`}) }
+  if(u>=15&&u<u0)iss.push({lv:'partial',r:3,c:blend(d.raw,d.ok,.5),msg:`Ủ ${u} phút chưa đủ: ${d.a} ngấm chưa hết, màu không đều.`});
+  if(u>u1)iss.push({lv:'partial',r:4,c:'#d4c9a6',wet:1,msg:`Ủ ${u} phút là quá lâu: dược liệu nhũn, dính chảo, khó sao khô.`});
+  if(m===0)iss.push({lv:'partial',r:5,c:blend(d.raw,d.ok,.6),msg:'Không trộn đều trong lúc ủ: phụ liệu ngấm không đều, chỗ khô chỗ ướt.'});
+  else if(m>10)iss.push({lv:'partial',r:5,c:blend(d.raw,d.ok,.6),msg:`Trộn cách ${m} phút là quá thưa: phụ liệu ngấm chưa đều.`});
+  if(d.dry&&!dry)iss.push({lv:'partial',r:6,c:blend(d.raw,d.ok,.6),msg:'Chưa sấy khô sau khi ủ: dược liệu còn ẩm, dễ dính chảo và cháy mật khi sao.'});
+  const lv=iss.some(i=>i.lv==='fail')?'fail':iss.length?'partial':'ok';
+  const top=iss.filter(i=>i.c).sort((a,b)=>a.r-b.r)[0]||{};
+  return{lv,iss,c:top.c||d.ok,wet:top.wet,smoke:top.smoke};
+}
+$('#btnRun').onclick=()=>{
+  if(running||S.r2[H2])return;
+  runSao();
+};
+function runSao(){
+  running=true;refreshBtn();
+  const d=DL[H2],h=H2,u=+$('#uRange').value,t=+$('#tRange').value,m=MIX,dry=h==='hk'&&$('#dry').checked;
+  const r=evalSao(h,u,t,m,dry),nm=m?Math.max(0,Math.floor((u-1)/m)):0,fb=$('#fb2'),wrap=$('#panWrap');
+  fb.className='mt-3 p-3 rounded-xl bg-bark-100 min-h-[5rem]';fb.textContent=`Đang thực hiện: ủ ${d.n} với ${d.a} ${u} phút…`;
+  wrap.classList.remove('smoke','run');$('#panPcs').innerHTML=pcs(h,14,d.raw);setTemp(25);
+  setStage('u');setTimeout(()=>paint(blend(d.raw,'#8a6a3a',.15),1),50);
+  let at=1000;
+  if(nm>0){setTimeout(()=>{setStage('m');fb.textContent=`Trộn đều lại (${nm} lần, cách ${m} phút)…`;document.querySelectorAll('#pan .pc').forEach(p=>p.classList.add('mix'))},at);at+=1600}
+  if(dry){setTimeout(()=>{setStage('d');fb.textContent='Sấy khô…';document.querySelectorAll('#pan .pc').forEach(p=>p.classList.remove('mix'));paint(blend(d.raw,d.ok,.12),0)},at);at+=1000}
+  setTimeout(()=>{
+    setStage('s');fb.textContent=`${h==='ds'?'Vi sao':'Sao vàng'} ở ${t}°C (${fire(t).toLowerCase()}), đảo đều…`;wrap.classList.add('run');
+    document.querySelectorAll('#pan .pc').forEach(p=>p.classList.remove('mix'));
+    let temp=25;window._iv=setInterval(()=>{temp=Math.min(t,temp+25);setTemp(temp)},150);
+    setTimeout(()=>{paint(r.c,r.wet);if(r.smoke)wrap.classList.add('smoke')},300);
+  },at);at+=3000;
+  setTimeout(()=>{
+    clearInterval(window._iv);wrap.classList.remove('run');running=false;setStage('');setTemp(25);
+    $('#tries').textContent='Đã sao: '+(Object.keys(S.r2).length+1)+'/4 vị';
+    const sc={ok:7.5,partial:3.5,fail:0}[r.lv],cls={ok:'bg-herb-100 text-herb-900',partial:'bg-amber-100 text-amber-900',fail:'bg-red-100 text-red-800'}[r.lv];
+    const list='<ul class="list-disc pl-6 mt-1">'+r.iss.map(i=>'<li>'+i.msg+'</li>').join('')+'</ul>';
+    let html;
+    if(r.lv==='ok')html=d.okMsg+`<br>Thông số đạt: ${d.std}<br><b>Điểm: ${sc}/7.5.</b>`;
+    else if(r.lv==='partial')html=`<b>Đạt một phần (${sc}/7.5 điểm):</b> thành phẩm chưa tối ưu.`+list+`<p class="mt-2"><b>Quy trình chuẩn:</b> ${d.std}</p>`;
+    else html=`<b>KHÔNG ĐẠT (0/7.5 điểm): mẻ đã hỏng, không được làm lại.</b>`+list+`<p class="mt-2"><b>Quy trình chuẩn:</b> ${d.std}</p>`;
+    S.r2[h]={lv:r.lv,c:r.c,wet:r.wet,smoke:r.smoke,cls:'min-h-[5rem] '+cls,html};S.s2[h]=sc;
+    const tag={ok:['✔ Đạt','#2f6b4f'],partial:['◐ Đạt một phần','#b7791f'],fail:['✘ Không đạt','#b91c1c']}[r.lv];
+    const ck=$('#ck-'+h);ck.textContent=tag[0];ck.style.color=tag[1];
+    S.ip2Best=Object.values(S.s2).reduce((a,b)=>a+b,0);S.ip2Ok=Object.keys(S.r2).length===4;
+    if(S.ip2Ok){$('#next2').classList.remove('hidden');$('#tries').innerHTML='<b style="color:#2f6b4f">Đã sao đủ 4/4 vị. Bấm “Sang Tiêu chuẩn sản phẩm” bên dưới.</b>';setTimeout(()=>$('#next2').scrollIntoView({behavior:'smooth',block:'center'}),400)}
+    sel2();update();
+  },at+3000);
+}
+$('#next2').onclick=()=>go(3);
+sel2();
+
+/* ---------- Tiêu chuẩn sản phẩm ---------- */
+const FAIL='Mẻ đã hỏng: kết luận KHÔNG ĐẠT bài thực hành, không làm lại. ';
+const QS=[
+{h:'ds',cap:'Đảng sâm trích gừng',c:'#d8c9a0',wet:1,ok:'#b88a45',
+ d:'Mẻ Đảng sâm trích gừng <b>dính bết vào nhau, chưa sẫm màu, chưa có mùi thơm của gừng</b>. Người chế biến đã cho nước gừng vào theo công thức rồi sao ngay.',
+ cause:'Nguyên nhân: <b>thừa nước gừng</b> so với lượng Đảng sâm nên dược liệu ngậm quá nhiều nước, dính bết. Mẻ còn cứu được: sao tiếp ở lửa nhỏ để nước bay hơi dần, dược liệu se lại, sẫm màu và dậy mùi gừng.',
+ o:[['Tăng lửa to để sao nhanh cho khô.',0,'Lửa to làm mặt ngoài cháy xém, bên trong vẫn ướt và mùi gừng bay mất. Đảng sâm chỉ sao ở nhiệt độ thấp.'],
+    ['Tiếp tục sao lửa nhỏ, đảo đều tay đến khi se mặt, sẫm màu, thơm mùi gừng.',1],
+    ['Cho thêm nước gừng tươi để tăng mùi thơm.',0,'Thêm nước gừng làm dược liệu dính bết nặng hơn. Mùi thơm chỉ xuất hiện khi gừng thấm vào và được sao se khô.']]},
+{h:'bt',cap:'Bạch thược trích rượu',c:'#4a3320',ok:'#4a3320',
+ d:'Bạch thược được cho vào chảo ngay sau khi trộn rượu, sao lửa to. Kết quả: <b>bề mặt cháy xém, bên trong còn trắng, gần như không có mùi rượu</b>.',
+ cause:FAIL+'Nguyên nhân: không ủ nên rượu chưa ngấm, lại sao lửa quá to nên rượu bay hơi hết và bề mặt cháy.',
+ o:[['Phun thêm rượu rồi tiếp tục sao lửa to cho thấm.',0,'Ở lửa to rượu bay hơi gần như tức thì nên vẫn không thấm, bề mặt càng cháy.'],
+    ['Cạo bỏ lớp cháy bên ngoài rồi đóng gói phần còn lại.',0,'Phần bên trong chưa ngấm rượu nên không đạt tiêu chuẩn; mẻ hỏng không được cứu hay thay bằng mẻ khác.'],
+    ['Mẻ hỏng, không đạt; nguyên nhân do ủ quá lâu làm rượu bay hơi.',0,'Kết luận không đạt là đúng nhưng nguyên nhân sai: mẻ này không được ủ.'],
+    ['Mẻ hỏng, kết luận không đạt; nguyên nhân do không ủ để rượu ngấm và sao lửa quá to.',1]]},
+{h:'hk',cap:'Hoàng kỳ trích mật',c:'#d9c58a',wet:1,ok:'#d1a53c',
+ d:'Hoàng kỳ đã ủ mật đủ thời gian nhưng được đưa thẳng vào chảo sao, không sấy khô. Mẻ sau khi sao <b>vẫn ẩm, dính tay, vón cục, mật đọng dính đáy chảo</b>, bề mặt chưa vàng khô.',
+ cause:'Nguyên nhân: bỏ qua bước <b>sấy khô sau khi ủ</b>. Dược liệu còn nhiều mật và ẩm nên khi sao bị dính, vón cục. Mẻ còn cứu được: sấy khô rồi sao lại ở 100–150°C.',
+ o:[['Tăng lửa lên trên 200°C để mật nhanh cô đặc.',0,'Nhiệt quá cao làm mật cháy đắng, bề mặt cháy khi bên trong vẫn ẩm.'],
+    ['Thêm một ít mật nữa cho dính đều rồi sao tiếp.',0,'Thêm mật làm dược liệu càng ẩm và dính.'],
+    ['Sấy khô để đuổi bớt ẩm, rồi sao lại ở 100–150°C, đảo đều đến khi vàng khô, thơm.',1]]},
+{h:'nt',cap:'Ngưu tất trích muối',c:'#bdb29a',cls:'salt',ok:'#bdb29a',
+ d:'Mẻ Ngưu tất có <b>vị mặn gắt, hạt muối trắng kết tinh trên bề mặt, màu vàng chỗ đậm chỗ nhạt</b>. Người làm pha muối theo cảm tính, ủ nhưng không trộn lại.',
+ cause:FAIL+'Nguyên nhân: pha muối quá đậm và không trộn đều khi ủ nên muối đọng và kết tinh cục bộ. Pha đúng là dung dịch NaCl 5% (1,8 g muối, đủ 36 ml cho 200 g dược liệu), trộn cách 10 phút.',
+ o:[['Rửa sạch bằng nước rồi sao lại cho khô.',0,'Rửa trôi cả phụ liệu đã ngấm, mất tác dụng dẫn thuốc vào thận; mẻ hỏng không được cứu.'],
+    ['Giảm nhiệt khi sao để bớt mặn.',0,'Nhiệt độ không làm giảm lượng muối thừa hay làm muối phân bố đều.'],
+    ['Mẻ hỏng, không đạt; nguyên nhân do sao ở nhiệt độ quá thấp.',0,'Kết luận không đạt là đúng nhưng nguyên nhân sai: lỗi nằm ở khâu pha muối và trộn khi ủ.'],
+    ['Mẻ hỏng, kết luận không đạt; nguyên nhân do pha muối quá đậm và không trộn đều khi ủ.',1]]},
+{h:'ds',cap:'Đảng sâm trích gừng (sau khi sao)',c:'#2e1d10',smoke:1,ok:'#2e1d10',
+ d:'Đảng sâm ủ đủ 30 phút, trộn đều đúng quy trình, nhưng khi sao để lửa vừa (khoảng 150°C). Thành phẩm <b>cạnh cháy đen, mùi khét lẫn mùi gừng, nhiều miếng giòn vụn</b>.',
+ cause:FAIL+'Nguyên nhân: sao ở nhiệt độ quá cao. Đảng sâm trích gừng chỉ <b>vi sao</b> (lửa nhỏ, 50–100°C), đảo đều liên tục để gừng thấm mà không cháy.',
+ o:[['Cạo phần cháy đen, dùng phần còn lại làm thành phẩm.',0,'Mùi khét đã nhiễm cả mẻ; mẻ hỏng không được cứu.'],
+    ['Tăng nhiệt cao hơn nữa để mùi gừng thơm đậm hơn.',0,'Nhiệt cao làm gừng và dược liệu cháy khét, mùi thơm bị phá hủy.'],
+    ['Mẻ hỏng, không đạt; nguyên nhân do ủ không đủ 30 phút.',0,'Kết luận không đạt là đúng nhưng nguyên nhân sai: mẻ này đã ủ đủ thời gian.'],
+    ['Mẻ hỏng, kết luận không đạt; nguyên nhân do sao ở nhiệt độ quá cao so với 50–100°C.',1]]},
+{h:'nt',cap:'Ngưu tất trích muối (đang sao)',c:'#cbbb9c',ok:'#d6bd6a',
+ d:'Ngưu tất ủ muối đúng 30 phút, trộn đều đúng quy trình, nhưng khi sao chỉ để khoảng 60°C. Sau nhiều phút, <b>bề mặt vẫn xám nhạt, còn hơi ẩm, chưa có mùi thơm</b>.',
+ cause:'Nguyên nhân: nhiệt độ sao quá thấp nên nước không bay đủ, bề mặt không chuyển vàng và không dậy mùi. Mẻ còn cứu được: nâng nhiệt dần lên 100–150°C và đảo đều.',
+ o:[['Ngừng sao, để khô tự nhiên ở nơi thoáng.',0,'Không được sao nên không dậy mùi thơm, không đạt tiêu chuẩn cảm quan.'],
+    ['Nâng lửa to trên 200°C cho nhanh vàng.',0,'Nhiệt quá cao làm cháy bề mặt khi bên trong chưa khô.'],
+    ['Nâng nhiệt dần lên 100–150°C, đảo đều đến khi bề mặt hơi vàng, thơm.',1]]},
+{h:'hk',cap:'Hoàng kỳ trích mật (thành phẩm)',c:'#d1a53c',ok:'#d1a53c',
+ d:'Thành phẩm Hoàng kỳ trích mật có <b>phiến đồng đều, ít vụn nát, màu vàng đậm, khô không dính tay, thơm mùi caramen, vị ngọt</b>. Kết luận của bạn là gì?',
+ cause:'Thành phẩm đạt cảm quan: phiến đồng đều, vàng đậm, khô không dính tay, thơm mùi caramen, vị ngọt. Chú ý: khi thời tiết có độ ẩm cao, Hoàng kỳ trích mật dễ bị ẩm mốc nên cần sấy kĩ lại bằng tủ sấy đến khô kiệt trước khi đóng gói.',
+ o:[['Chưa đạt vì phải còn dẻo ướt, dính tay mới đủ mật.',0,'Hoàng kỳ trích mật đạt phải khô, không dính tay; ướt dính là lỗi chưa sấy hoặc sao chưa khô.'],
+    ['Đạt tiêu chuẩn cảm quan, có thể đóng gói bảo quản.',1],
+    ['Chưa đạt vì phải sẫm đen mới thơm.',0,'Sẫm đen là dấu hiệu cháy, không phải tiêu chuẩn đạt.']]}];
+function shuf(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function renderQ(){
+  const q=QS[S.qi],w=$('#panWrap3');S.qt=0;
+  $('#qNo').textContent='Tình huống '+(S.qi+1)+'/'+QS.length;$('#qCap').textContent=q.cap;$('#qDesc').innerHTML=q.d;
+  $('#pan3').innerHTML=pcs(q.h,12,q.c,(q.wet?'wet ':'')+(q.cls||''));
+  w.classList.remove('smoke','run');if(q.smoke)w.classList.add('smoke','run');
+  $('#fb3').classList.add('hidden');$('#nextQ').classList.add('hidden');
+  $('#opts').innerHTML=shuf(q.o).map((o,i)=>`<button class="op opt w-full text-left p-3" data-ok="${o[1]}" data-w="${(o[2]||'').replace(/"/g,'&quot;')}"><b>${'ABCD'[i]}.</b> ${o[0]}</button>`).join('');
+  document.querySelectorAll('.op').forEach(b=>b.onclick=()=>pickQ(b));
+}
+function pickQ(b){
+  if(b.disabled||document.querySelector('.op.done'))return;
+  const q=QS[S.qi],fb=$('#fb3');S.qt++;fb.classList.remove('hidden');
+  if(b.dataset.ok==='1'){
+    const sc=[5,3,1][Math.min(S.qt,3)-1];S.ip3+=sc;
+    document.querySelectorAll('.op').forEach(x=>{x.disabled=true});
+    b.classList.add('done');b.style.borderColor='#2f6b4f';b.style.background='#d6e8da';b.style.fontWeight='700';
+    fb.className='mt-3 p-3 rounded-xl bg-herb-100 text-herb-900';fb.innerHTML=`<b>Chính xác (${sc}/5 điểm).</b> ${q.cause}`;
+    $('#panWrap3').classList.remove('smoke','run');
+    document.querySelectorAll('#pan3 .pc').forEach(p=>{p.classList.remove('wet','salt');p.style.setProperty('--c',q.ok)});
+    if(S.qi===QS.length-1){S.ip3Done=true;$('#sensory').classList.remove('hidden');$('#next3').classList.remove('hidden')}
+    else $('#nextQ').classList.remove('hidden');
+    update();
+  }else{
+    b.disabled=true;b.style.borderColor='#f87171';b.style.background='#fef2f2';b.style.opacity='.7';
+    fb.className='mt-3 p-3 rounded-xl bg-red-100 text-red-800';fb.innerHTML='<b>Chưa đúng.</b> '+b.dataset.w;
+  }
+}
+$('#nextQ').onclick=()=>{S.qi++;renderQ()};
+$('#next3').onclick=()=>go(4);
+renderQ();
+
+/* ---------- Kết quả ---------- */
+function showResult(){
+  const rows=[['Nhận diện: ghép dược liệu – phụ liệu',pairScore(),15],['Tính lượng phụ liệu cho 4 vị thuốc',calcSum(),20],['Thực hành sao trích 4 vị thuốc',S.ip2Best,30],['Tiêu chuẩn sản phẩm (7 tình huống)',S.ip3,35]];
+  $('#resBody').innerHTML=rows.map(r=>`<tr class="border-b border-bark-100"><td class="p-2">${r[0]}</td><td class="p-2 text-right font-bold">${r[1]}</td><td class="p-2 text-right">${r[2]}</td></tr>`).join('');
+  const t=Math.round(total());$('#resTotal').textContent=t;$('#gN').textContent=t;$('#gauge').style.setProperty('--p',t);
+  const fails=Object.keys(S.r2).filter(h=>S.r2[h].lv==='fail'),parts=Object.keys(S.r2).filter(h=>S.r2[h].lv==='partial');
+  const lab={ok:['Đạt','#2f6b4f','#eef5ef'],partial:['Đạt một phần','#b7791f','#fff6dc'],fail:['Không đạt (mẻ hỏng)','#b91c1c','#fef2f2']};
+  $('#herbStatus').innerHTML=Object.keys(DL).map(h=>{const r=S.r2[h];if(!r)return'';const l=lab[r.lv];return `<div class="rounded-xl p-3 flex items-center gap-3" style="background:${l[2]};border:2px solid ${l[1]}"><svg class="pc flex-none" viewBox="0 0 64 40" style="width:52px;height:34px;--c:${r.c}">${SHP[h]}</svg><div><b>${DL[h].n} trích ${DL[h].a}</b><br><span style="color:${l[1]};font-weight:700">${l[0]}</span> · ${S.s2[h]}/7.5 điểm</div></div>`}).join('');
+  const st=$('#stamp');
+  if(fails.length){st.textContent='KHÔNG ĐẠT';st.style.color='#b91c1c'}
+  else{st.textContent='ĐẠT';st.style.color='#2f6b4f'}
+  const rk=t>=90?'Xuất sắc':t>=80?'Giỏi':t>=65?'Khá':t>=50?'Trung bình':'Cần ôn tập lại';
+  $('#resRank').textContent=fails.length?`Kết luận thực hành: KHÔNG ĐẠT, có ${fails.length} mẻ hỏng (${fails.map(h=>DL[h].n).join(', ')}). Tổng điểm: ${t}/100.`:`Kết luận thực hành: ĐẠT${parts.length?' (còn '+parts.length+' mẻ chưa tối ưu)':''}. Xếp loại: ${rk} (${t}/100).`;
+  $('#resDate').textContent='Thời điểm hoàn thành: '+new Date().toLocaleString('vi-VN');
+}
+renderTabs();update();
+</script>
+</body>
+</html>
